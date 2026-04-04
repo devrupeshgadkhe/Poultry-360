@@ -1,0 +1,17 @@
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Application.deps.json
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Application.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Application.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Domain.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Persistence.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Domain.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\bin\Debug\net8.0\PoultryERP.Persistence.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.csproj.AssemblyReference.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.AssemblyInfoInputs.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.AssemblyInfo.cs
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.csproj.CoreCompileInputs.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.csproj.CopyComplete
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\refint\PoultryERP.Application.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\PoultryERP.Application.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Application\obj\Debug\net8.0\ref\PoultryERP.Application.dll

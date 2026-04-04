@@ -1,0 +1,5 @@
+{
+  "name": "Poultry 360 ERP",
+  "description": "Clean Architecture Poultry Farm ERP with API, Application, Domain, and Persistence layers.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "GtfVZaqYtHbcQCtD8HZZugj04RGoDmJI5f8AfjTATRU=",
+  "Source": "PoultryERP.API",
+  "BasePath": "_content/PoultryERP.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

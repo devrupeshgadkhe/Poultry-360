@@ -1,0 +1,17 @@
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\bin\Debug\net8.0\PoultryERP.Persistence.deps.json
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\bin\Debug\net8.0\PoultryERP.Persistence.runtimeconfig.json
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\bin\Debug\net8.0\PoultryERP.Persistence.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\bin\Debug\net8.0\PoultryERP.Persistence.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\bin\Debug\net8.0\PoultryERP.Domain.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\bin\Debug\net8.0\PoultryERP.Domain.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.csproj.AssemblyReference.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.AssemblyInfoInputs.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.AssemblyInfo.cs
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.csproj.CoreCompileInputs.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.csproj.CopyComplete
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\refint\PoultryERP.Persistence.dll
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.pdb
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\PoultryERP.Persistence.genruntimeconfig.cache
+C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\obj\Debug\net8.0\ref\PoultryERP.Persistence.dll

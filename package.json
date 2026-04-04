@@ -1,0 +1,18 @@
+{
+  "name": "poultry-erp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "clean": "taskkill /F /IM PoultryERP.API.exe /T || exit 0",
+    "dev": "concurrently \"dotnet run --project PoultryERP.API --urls=https://localhost:56572\" \"npm run dev --prefix Poultry_UI\"",
+    "build": "npm run build --prefix Poultry_UI",
+    "lint": "npm run lint --prefix Poultry_UI"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2"
+  }
+}

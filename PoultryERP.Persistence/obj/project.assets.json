@@ -4038,11 +4038,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj",
+      "projectUniqueName": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj",
       "projectName": "PoultryERP.Persistence",
-      "projectPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj",
+      "projectPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj",
       "packagesPath": "C:\\Users\\rupes\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Persistence\\obj\\",
+      "outputPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Persistence\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -4063,8 +4063,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Domain\\PoultryERP.Domain.csproj": {
-              "projectPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Domain\\PoultryERP.Domain.csproj"
+            "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Domain\\PoultryERP.Domain.csproj": {
+              "projectPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Domain\\PoultryERP.Domain.csproj"
             }
           }
         }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PoultryERP.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+637343f6832d62fabb36187766b6669620ba5cf9")]
 [assembly: System.Reflection.AssemblyProductAttribute("PoultryERP.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PoultryERP.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

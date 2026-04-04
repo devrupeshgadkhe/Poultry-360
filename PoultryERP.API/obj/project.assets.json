@@ -4223,11 +4223,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.API\\PoultryERP.API.csproj",
+      "projectUniqueName": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.API\\PoultryERP.API.csproj",
       "projectName": "PoultryERP.API",
-      "projectPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.API\\PoultryERP.API.csproj",
+      "projectPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.API\\PoultryERP.API.csproj",
       "packagesPath": "C:\\Users\\rupes\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.API\\obj\\",
+      "outputPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.API\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -4248,11 +4248,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Application\\PoultryERP.Application.csproj": {
-              "projectPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Application\\PoultryERP.Application.csproj"
+            "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Application\\PoultryERP.Application.csproj": {
+              "projectPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Application\\PoultryERP.Application.csproj"
             },
-            "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj": {
-              "projectPath": "C:\\Users\\rupes\\Downloads\\poultry-360-erp (5)\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj"
+            "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj": {
+              "projectPath": "D:\\Projects\\Poultry 360\\Poultry-360\\PoultryERP.Persistence\\PoultryERP.Persistence.csproj"
             }
           }
         }

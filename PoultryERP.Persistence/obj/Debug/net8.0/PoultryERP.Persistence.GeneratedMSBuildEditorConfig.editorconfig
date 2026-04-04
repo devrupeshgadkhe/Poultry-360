@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = PoultryERP.Persistence
-build_property.ProjectDir = C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Persistence\
+build_property.ProjectDir = D:\Projects\Poultry 360\Poultry-360\PoultryERP.Persistence\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

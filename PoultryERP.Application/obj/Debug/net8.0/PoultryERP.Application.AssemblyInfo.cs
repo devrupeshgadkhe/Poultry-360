@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PoultryERP.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+637343f6832d62fabb36187766b6669620ba5cf9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c4e832cbb8121f1a06b79f76082a5c03b80f8e4c")]
 [assembly: System.Reflection.AssemblyProductAttribute("PoultryERP.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PoultryERP.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

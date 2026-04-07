@@ -9,3 +9,15 @@ C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Domain\obj\Debug\net8.0\
 C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Domain\obj\Debug\net8.0\refint\PoultryERP.Domain.dll
 C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.pdb
 C:\Users\rupes\Downloads\poultry-360-erp (5)\PoultryERP.Domain\obj\Debug\net8.0\ref\PoultryERP.Domain.dll
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\bin\Debug\net8.0\PoultryERP.Domain.deps.json
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\bin\Debug\net8.0\PoultryERP.Domain.dll
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\bin\Debug\net8.0\PoultryERP.Domain.pdb
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.AssemblyInfoInputs.cache
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.AssemblyInfo.cs
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.csproj.CoreCompileInputs.cache
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.sourcelink.json
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.dll
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\refint\PoultryERP.Domain.dll
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\PoultryERP.Domain.pdb
+D:\Projects\Poultry 360\Poultry-360\PoultryERP.Domain\obj\Debug\net8.0\ref\PoultryERP.Domain.dll

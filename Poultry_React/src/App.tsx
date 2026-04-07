@@ -18,34 +18,46 @@ import AddDailyLog from './pages/DailyLogs/AddDailyLog';
 import EditDailyLog from './pages/DailyLogs/EditDailyLog';
 
 // Inventory
-import InventoryList from './pages/Inventory/InventoryList'; 
-import AddInventoryItem from './pages/Inventory/AddInventoryItem'; 
-import EditInventoryItem from './pages/Inventory/EditInventoryItem'; 
+import InventoryList from './pages/Inventory/InventoryList';
+import AddInventoryItem from './pages/Inventory/AddInventoryItem';
+import EditInventoryItem from './pages/Inventory/EditInventoryItem';
 
 // Staff Management
 import StaffPage from './pages/Staff/Staff';
 
-// Financial Transactions (नवीन जोडलेले)
+// Financial Transactions
 import FinancialTransactionForm from './pages/FinancialTransactions/FinancialTransactionForm';
-// टीप: जर तुमच्याकडे FinancialTransactionList पेज असेल तर त्याचे इम्पोर्ट खालीलप्रमाणे करा:
-// import FinancialTransactionList from './pages/FinancialTransactions/FinancialTransactionList';
 
 // Purchase (POS System)
 import CreatePurchase from './pages/Purchase/CreatePurchase';
 import PurchaseList from './pages/Purchase/PurchaseList';
 import EditPurchase from './pages/Purchase/EditPurchase';
 
-// --- Food Formation (Recipe Master) ---
+// Food Formation (Recipe Master)
 import FoodFormationList from './pages/FoodFormation/FoodFormationList';
-import FoodFormationForm from './pages/FoodFormation/FoodFormationForm'; 
+import FoodFormationForm from './pages/FoodFormation/FoodFormationForm';
 
-// --- Feed Precision (Production Module) ---
+// Feed Precision (Production Module)
 import FeedPrecisionList from './pages/FeedPrecision/FeedPrecisionList';
 import FeedPrecisionForm from './pages/FeedPrecision/FeedPrecisionForm';
 
+// ✅ Sales Module (हे आधी नव्हते - MAIN FIX!)
+import SalesList from './pages/Sales/SalesList';
+import SalesForm from './pages/Sales/SalesForm';
+
+/**
+ * ✅ PrivateRoute - Token नसेल तर Login वर redirect करतो
+ */
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
+
 /**
  * Poultry 360 ERP - Main App Component
- * Updated: 2026-03-26 (Added Staff & Financial Transaction Routes)
  */
 function App() {
   return (
@@ -53,61 +65,53 @@ function App() {
       <Routes>
         {/* --- Public Route --- */}
         <Route path="/login" element={<Login />} />
-        
-        {/* --- Protected Routes - Wrapped in MainLayout --- */}
-        
-        {/* Dashboard */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
-          } 
-        />
-        
+
+        {/* --- Dashboard --- */}
+        <Route path="/dashboard" element={<PrivateRoute><MainLayout><Dashboard /></MainLayout></PrivateRoute>} />
+
         {/* --- Flocks Management --- */}
-        <Route path="/flocks" element={<MainLayout><FlockList /></MainLayout>} />
-        <Route path="/flocks/add" element={<MainLayout><AddFlock /></MainLayout>} />
-        <Route path="/flocks/edit/:id" element={<MainLayout><EditFlock /></MainLayout>} />
-        <Route path="/flocks/:flockId/vaccinations" element={<MainLayout><FlockVaccinations /></MainLayout>} />
+        <Route path="/flocks" element={<PrivateRoute><MainLayout><FlockList /></MainLayout></PrivateRoute>} />
+        <Route path="/flocks/add" element={<PrivateRoute><MainLayout><AddFlock /></MainLayout></PrivateRoute>} />
+        <Route path="/flocks/edit/:id" element={<PrivateRoute><MainLayout><EditFlock /></MainLayout></PrivateRoute>} />
+        <Route path="/flocks/:flockId/vaccinations" element={<PrivateRoute><MainLayout><FlockVaccinations /></MainLayout></PrivateRoute>} />
 
         {/* --- Daily Logs --- */}
-        <Route path="/daily-logs" element={<MainLayout><DailyLogList /></MainLayout>} />
-        <Route path="/daily-logs/add" element={<MainLayout><AddDailyLog /></MainLayout>} />
-        <Route path="/daily-logs/edit/:id" element={<MainLayout><EditDailyLog /></MainLayout>} />
+        <Route path="/daily-logs" element={<PrivateRoute><MainLayout><DailyLogList /></MainLayout></PrivateRoute>} />
+        <Route path="/daily-logs/add" element={<PrivateRoute><MainLayout><AddDailyLog /></MainLayout></PrivateRoute>} />
+        <Route path="/daily-logs/edit/:id" element={<PrivateRoute><MainLayout><EditDailyLog /></MainLayout></PrivateRoute>} />
 
         {/* --- Inventory Management --- */}
-        <Route path="/inventory" element={<MainLayout><InventoryList /></MainLayout>} />
-        <Route path="/inventory/add" element={<MainLayout><AddInventoryItem /></MainLayout>} />
-        <Route path="/inventory/edit/:id" element={<MainLayout><EditInventoryItem /></MainLayout>} />
+        <Route path="/inventory" element={<PrivateRoute><MainLayout><InventoryList /></MainLayout></PrivateRoute>} />
+        <Route path="/inventory/add" element={<PrivateRoute><MainLayout><AddInventoryItem /></MainLayout></PrivateRoute>} />
+        <Route path="/inventory/edit/:id" element={<PrivateRoute><MainLayout><EditInventoryItem /></MainLayout></PrivateRoute>} />
 
         {/* --- Staff Management --- */}
-        <Route path="/staff" element={<MainLayout><StaffPage /></MainLayout>} />
+        <Route path="/staff" element={<PrivateRoute><MainLayout><StaffPage /></MainLayout></PrivateRoute>} />
 
-        {/* --- Financial Transactions Module --- */}
-        {/* १. नवीन ट्रान्झॅक्शन फॉर्म */}
-        <Route path="/financial-transactions/new" element={<MainLayout><FinancialTransactionForm /></MainLayout>} />
-        
-        {/* २. ट्रान्झॅक्शन लिस्ट (जर बनवली असेल तर खालील राऊट वापरा) */}
-        {/* <Route path="/financial-transactions" element={<MainLayout><FinancialTransactionList /></MainLayout>} /> */}
+        {/* --- Financial Transactions --- */}
+        <Route path="/financial-transactions/new" element={<PrivateRoute><MainLayout><FinancialTransactionForm /></MainLayout></PrivateRoute>} />
 
         {/* --- Purchase POS Module --- */}
-        <Route path="/purchases" element={<MainLayout><PurchaseList /></MainLayout>} />
-        <Route path="/purchase/create" element={<MainLayout><CreatePurchase /></MainLayout>} />
-        <Route path="/purchase/edit/:id" element={<MainLayout><EditPurchase /></MainLayout>} />
+        <Route path="/purchases" element={<PrivateRoute><MainLayout><PurchaseList /></MainLayout></PrivateRoute>} />
+        <Route path="/purchase/create" element={<PrivateRoute><MainLayout><CreatePurchase /></MainLayout></PrivateRoute>} />
+        <Route path="/purchase/edit/:id" element={<PrivateRoute><MainLayout><EditPurchase /></MainLayout></PrivateRoute>} />
 
         {/* --- Food Formation (Recipe Master) --- */}
-        <Route path="/food-formations" element={<MainLayout><FoodFormationList /></MainLayout>} />
-        <Route path="/food-formations/add" element={<MainLayout><FoodFormationForm /></MainLayout>} />
-        <Route path="/food-formations/edit/:id" element={<MainLayout><FoodFormationForm /></MainLayout>} />
+        <Route path="/food-formations" element={<PrivateRoute><MainLayout><FoodFormationList /></MainLayout></PrivateRoute>} />
+        <Route path="/food-formations/add" element={<PrivateRoute><MainLayout><FoodFormationForm /></MainLayout></PrivateRoute>} />
+        <Route path="/food-formations/edit/:id" element={<PrivateRoute><MainLayout><FoodFormationForm /></MainLayout></PrivateRoute>} />
 
         {/* --- Feed Precision (Production) --- */}
-        <Route path="/feed-precision" element={<MainLayout><FeedPrecisionList /></MainLayout>} />
-        <Route path="/feed-precision/new" element={<MainLayout><FeedPrecisionForm /></MainLayout>} />
-        <Route path="/feed-precision/edit/:id" element={<MainLayout><FeedPrecisionForm /></MainLayout>} />
+        <Route path="/feed-precision" element={<PrivateRoute><MainLayout><FeedPrecisionList /></MainLayout></PrivateRoute>} />
+        <Route path="/feed-precision/new" element={<PrivateRoute><MainLayout><FeedPrecisionForm /></MainLayout></PrivateRoute>} />
+        <Route path="/feed-precision/edit/:id" element={<PrivateRoute><MainLayout><FeedPrecisionForm /></MainLayout></PrivateRoute>} />
 
-        {/* --- Default & Catch-all Redirects --- */}
+        {/* ✅ Sales Module - MISSING ROUTES ADDED */}
+        <Route path="/sales" element={<PrivateRoute><MainLayout><SalesList /></MainLayout></PrivateRoute>} />
+        <Route path="/sales/new" element={<PrivateRoute><MainLayout><SalesForm /></MainLayout></PrivateRoute>} />
+        <Route path="/sales/edit/:id" element={<PrivateRoute><MainLayout><SalesForm /></MainLayout></PrivateRoute>} />
+
+        {/* --- Default & Catch-all --- */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

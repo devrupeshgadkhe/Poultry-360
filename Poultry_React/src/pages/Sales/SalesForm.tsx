@@ -1,36 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
-import { Save, Plus, Trash2, ArrowLeft, Calculator, IndianRupee, Layers } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, Calculator, Layers, AlertCircle, Loader2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-// --- Interfaces defined locally as per architecture ---
+// --- Interfaces (Matching Backend PascalCase DTOs)
 export enum ItemType { Egg = 1, Bird = 2, Inventory = 3 }
 export enum PaymentMode { Cash = 1, Online = 2, BankTransfer = 3 }
 
+export interface Customer { Id: number; Name: string; Phone: string; }
+export interface EggInventory { Id: number; EggType: string; CurrentStock: number; }
+export interface Flock { Id: number; Breed: string; BatchNumber: string; CurrentCount: number; IsActive: boolean; }
+// ✅ FIX: "SellingPrice" column name updated here
+export interface InventoryItem { Id: number; Name: string; Quantity: number; SellingPrice?: number; } 
+
 export interface SaleItem {
-  id: number;
-  saleId: number;
-  itemType: ItemType;
-  eggInventoryId: number | null;
-  flockId: number | null;
-  inventoryItemId: number | null;
-  quantity: number;
-  pricePerUnit: number;
-  totalPrice: number;
+  Id: number;
+  SaleId: number;
+  ItemType: ItemType;
+  EggInventoryId: number | null;
+  FlockId: number | null;
+  InventoryItemId: number | null;
+  Quantity: number; 
+  PricePerUnit: number; 
+  TotalPrice: number;
+  uiQuantity: number; 
+  IsTrayInput: boolean; 
 }
 
 export interface Sale {
-  id: number;
-  customerId: number;
-  date: string;
-  subTotal: number;
-  discount: number;
-  grandTotal: number;
-  receivedAmount: number;
-  status: number;
-  paymentMode: PaymentMode;
-  notes: string;
-  saleItems: SaleItem[];
+  Id: number;
+  CustomerId: number;
+  Date: string;
+  SubTotal: number;
+  Discount: number;
+  GrandTotal: number;
+  ReceivedAmount: number;
+  BalanceAmount?: number;
+  Status: number;
+  PaymentMode: PaymentMode;
+  Notes: string;
+  SaleItems: SaleItem[];
 }
 
 const SalesForm: React.FC = () => {
@@ -38,21 +49,24 @@ const SalesForm: React.FC = () => {
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [eggStocks, setEggStocks] = useState<any[]>([]);
-  const [flocks, setFlocks] = useState<any[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [eggStocks, setEggStocks] = useState<EggInventory[]>([]);
+  const [flocks, setFlocks] = useState<Flock[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [masterDataLoading, setMasterDataLoading] = useState(false);
 
   const [sale, setSale] = useState<Partial<Sale>>({
-    customerId: 0,
-    date: new Date().toISOString().split('T')[0],
-    discount: 0,
-    receivedAmount: 0,
-    paymentMode: PaymentMode.Cash,
-    status: 1,
-    notes: '',
-    saleItems: []
+    CustomerId: 0,
+    Date: new Date().toISOString().split('T')[0],
+    Discount: 0,
+    ReceivedAmount: 0,
+    PaymentMode: PaymentMode.Cash,
+    Status: 1,
+    Notes: '',
+    SaleItems: []
   });
 
   useEffect(() => {
@@ -61,196 +75,297 @@ const SalesForm: React.FC = () => {
   }, [id]);
 
   const fetchMasterData = async () => {
-    const [c, e, f, i] = await Promise.all([
-      api.get('/Customers'), api.get('/EggInventory'),
-      api.get('/Flocks'), api.get('/Inventory')
-    ]);
-    setCustomers(c.data); setEggStocks(e.data);
-    setFlocks(f.data.filter((x: any) => x.isActive || isEdit));
-    setInventoryItems(i.data);
+    try {
+      setMasterDataLoading(true);
+      const [c, e, f, i] = await Promise.all([
+        api.get('/Customers'), api.get('/EggInventory'),
+        api.get('/Flocks'), api.get('/Inventory')
+      ]);
+      setCustomers(c.data || []);
+      setEggStocks(e.data || []);
+      setFlocks((f.data || []).filter((fl: any) => fl.IsActive));
+      setInventoryItems(i.data || []);
+    } catch (err) { setError('डेटा लोड करताना एरर आली.'); }
+    finally { setMasterDataLoading(false); }
   };
 
   const fetchSale = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await api.get<Sale>(`/Sales/${id}`);
-      setSale({ ...res.data, date: res.data.date.split('T')[0] });
-    } finally { setLoading(false); }
+      const formattedItems = res.data.SaleItems.map(item => ({
+        ...item,
+        uiQuantity: item.Quantity,
+        IsTrayInput: false
+      }));
+      setSale({ ...res.data, Date: res.data.Date.split('T')[0], SaleItems: formattedItems });
+    } catch (err) { setError('पावती लोड करता आली नाही.'); }
+    finally { setLoading(false); }
+  };
+
+  // --- PDF Generation Logic ---
+  const generatePDF = (saleData: any, invoiceId: any) => {
+    const doc = new jsPDF();
+    const customer = customers.find(c => c.Id === saleData.CustomerId);
+
+    doc.setFontSize(22);
+    doc.setTextColor(249, 115, 22);
+    doc.text("POULTRY 360", 14, 20);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text("Premium Poultry Management ERP Solution", 14, 25);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0);
+    doc.setFont(undefined, 'bold');
+    doc.text(`INVOICE #: ${invoiceId || 'NEW'}`, 140, 20);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Date: ${saleData.Date}`, 140, 26);
+    doc.text(`Payment: ${PaymentMode[saleData.PaymentMode]}`, 140, 32);
+
+    doc.setDrawColor(240);
+    doc.line(14, 38, 196, 38);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text("BILL TO:", 14, 45);
+    doc.setTextColor(0);
+    doc.setFont(undefined, 'bold');
+    doc.text(`${customer?.Name || 'General Customer'}`, 14, 51);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Phone: ${customer?.Phone || 'N/A'}`, 14, 57);
+
+    const tableData = (saleData.SaleItems || []).map((item: any) => {
+      let name = "";
+      if (item.ItemType === ItemType.Egg) name = "Eggs"; 
+      else if (item.ItemType === ItemType.Bird) name = flocks.find(f => f.Id === item.FlockId)?.Breed || "Birds";
+      else name = inventoryItems.find(i => i.Id === item.InventoryItemId)?.Name || "Item";
+
+      return [
+        name,
+        `${item.Quantity} Units`,
+        `Rs. ${item.PricePerUnit.toFixed(2)}`,
+        `Rs. ${item.TotalPrice.toFixed(2)}`
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 65,
+      head: [['Description', 'Quantity', 'Rate', 'Total']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 4 },
+      columnStyles: { 3: { halign: 'right' } }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    doc.text(`Sub-Total:`, 140, finalY);
+    doc.text(`Rs. ${saleData.SubTotal.toLocaleString()}`, 196, finalY, { align: 'right' });
+    doc.text(`Discount:`, 140, finalY + 7);
+    doc.text(`- Rs. ${saleData.Discount.toLocaleString()}`, 196, finalY + 7, { align: 'right' });
+    doc.setDrawColor(200);
+    doc.line(135, finalY + 11, 196, finalY + 11);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(249, 115, 22);
+    doc.text(`Grand Total:`, 140, finalY + 18);
+    doc.text(`Rs. ${saleData.GrandTotal.toLocaleString()}`, 196, finalY + 18, { align: 'right' });
+
+    doc.save(`Invoice_${customer?.Name || 'Sale'}_${saleData.Date}.pdf`);
   };
 
   const addItem = () => {
     const newItem: SaleItem = {
-      id: 0, saleId: isEdit ? Number(id) : 0, itemType: ItemType.Egg,
-      eggInventoryId: null, flockId: null, inventoryItemId: null,
-      quantity: 1, pricePerUnit: 0, totalPrice: 0
+      Id: 0, SaleId: isEdit ? Number(id) : 0,
+      ItemType: ItemType.Egg, EggInventoryId: null, FlockId: null, InventoryItemId: null,
+      Quantity: 0, uiQuantity: 0, PricePerUnit: 0, TotalPrice: 0, IsTrayInput: true
     };
-    setSale(p => ({ ...p, saleItems: [...(p.saleItems || []), newItem] }));
+    setSale(p => ({ ...p, SaleItems: [...(p.SaleItems || []), newItem] }));
   };
 
   const updateItem = (index: number, fields: Partial<SaleItem>) => {
-    const items = [...(sale.saleItems || [])];
-    items[index] = { ...items[index], ...fields };
-    setSale({ ...sale, saleItems: items });
+    const items = [...(sale.SaleItems || [])];
+    let itm = { ...items[index], ...fields };
+
+    // ✅ FIX: Inventory निवडल्यावर SellingPrice आपोआप सेट करण्यासाठी
+    if (fields.InventoryItemId) {
+      const invProd = inventoryItems.find(i => i.Id === fields.InventoryItemId);
+      if (invProd && invProd.SellingPrice) {
+        itm.PricePerUnit = invProd.SellingPrice;
+      }
+    }
+
+    // Tray and Eggs conversion logic
+    if (itm.ItemType === ItemType.Egg && itm.IsTrayInput) {
+        itm.Quantity = itm.uiQuantity * 30;
+    } else {
+        itm.Quantity = itm.uiQuantity;
+    }
+
+    itm.TotalPrice = itm.Quantity * itm.PricePerUnit;
+    items[index] = itm;
+    setSale({ ...sale, SaleItems: items });
   };
 
-  const subTotal = sale.saleItems?.reduce((s, i) => s + (i.quantity * i.pricePerUnit), 0) || 0;
-  const grandTotal = subTotal - (sale.discount || 0);
+  const removeItem = (index: number) => {
+    const items = [...(sale.SaleItems || [])];
+    items.splice(index, 1);
+    setSale({ ...sale, SaleItems: items });
+  };
+
+  const subTotal = sale.SaleItems?.reduce((s, i) => s + i.TotalPrice, 0) || 0;
+  const grandTotal = subTotal - (sale.Discount || 0);
+  const balanceAmount = grandTotal - (sale.ReceivedAmount || 0);
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!sale.CustomerId) { setError('कृपया कस्टमर निवडा.'); return; }
+    if (!sale.SaleItems?.length) { setError('कृपया किमान एक आयटम जोडा.'); return; }
+    
     setLoading(true);
     try {
-      const payload = { ...sale, subTotal, grandTotal };
-      isEdit ? await api.put(`/Sales/${id}`, payload) : await api.post('/Sales', payload);
+      const payload = { ...sale, SubTotal: subTotal, GrandTotal: grandTotal, BalanceAmount: balanceAmount };
+      let response;
+      if (isEdit) {
+        response = await api.put(`/Sales/${id}`, payload);
+      } else {
+        response = await api.post('/Sales', payload);
+      }
+      generatePDF(payload, response.data?.Id || id);
       navigate('/sales');
-    } catch (err) { alert('Error saving sale'); }
-    finally { setLoading(false); }
+    } catch (err: any) { 
+      setError(err.response?.data?.Message || 'सेव्ह करताना एरर आली.'); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
+  if (masterDataLoading) return <div className="p-10 text-center font-bold">मास्टर डेटा लोड होत आहे...</div>;
+
   return (
-    <div className="p-6 max-w-6xl mx-auto bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/sales')} className="p-3 bg-white rounded-2xl border border-gray-100 shadow-sm hover:bg-gray-100 transition">
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-3xl font-black text-gray-900">{isEdit ? 'Update Sale' : 'New Sale'}</h1>
-            <p className="text-sm text-gray-500 font-medium">Invoice #{id || 'Draft'}</p>
-          </div>
+    <div className="p-4 max-w-[1600px] mx-auto bg-[#f8fafc] min-h-screen font-sans text-slate-900">
+      <div className="flex items-center justify-between mb-4 bg-white p-3 rounded-lg border shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/sales')} className="p-2 hover:bg-slate-100 rounded-lg"><ArrowLeft size={18} /></button>
+          <h1 className="text-xl font-bold">{isEdit ? 'Update Sale' : 'New Sale'}</h1>
         </div>
       </div>
 
-      <form onSubmit={onSave} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Header Card */}
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Customer</label>
-              <select 
-                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all outline-none"
-                value={sale.customerId} onChange={e => setSale({ ...sale, customerId: Number(e.target.value) })} required
-              >
+      {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm font-bold"><AlertCircle size={18} /> {error}</div>}
+
+      <form onSubmit={onSave} className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 lg:col-span-8 space-y-4">
+          <div className="bg-white p-4 rounded-xl border shadow-sm grid grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-500 uppercase">Customer</label>
+              <select className="w-full border-b-2 border-slate-200 py-1.5 text-sm font-bold outline-none focus:border-orange-500" value={sale.CustomerId} onChange={e => setSale({...sale, CustomerId: Number(e.target.value)})}>
                 <option value="0">Select Customer</option>
-                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {customers.map(c => <option key={c.Id} value={c.Id}>{c.Name}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Billing Date</label>
-              <input 
-                type="date" className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all outline-none"
-                value={sale.date} onChange={e => setSale({ ...sale, date: e.target.value })} required
-              />
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-500 uppercase">Billing Date</label>
+              <input type="date" className="w-full border-b-2 border-slate-200 py-1.5 text-sm font-bold outline-none focus:border-orange-500" value={sale.Date} onChange={e => setSale({...sale, Date: e.target.value})} />
             </div>
           </div>
 
-          {/* Items Table Card */}
-          <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-black text-gray-800 flex items-center gap-2 text-sm uppercase tracking-widest"><Layers size={18} className="text-orange-500" /> Items List</h3>
-              <button type="button" onClick={addItem} className="bg-orange-600 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-orange-700 transition shadow-lg shadow-orange-100 flex items-center gap-2">
-                <Plus size={14} /> Add Item
-              </button>
+          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
+              <h3 className="text-xs font-bold uppercase text-slate-600 flex items-center gap-2"><Layers size={14}/> Items Details</h3>
+              <button type="button" onClick={addItem} className="text-[11px] font-bold bg-orange-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-orange-700"><Plus size={14}/> Add Item</button>
             </div>
-            <div className="p-2 overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-[10px] font-black text-gray-400 uppercase tracking-tighter border-b border-gray-50">
-                    <th className="px-4 py-4">Type</th>
-                    <th className="px-4 py-4">Product</th>
-                    <th className="px-4 py-4 w-20">Qty</th>
-                    <th className="px-4 py-4 w-24">Rate</th>
-                    <th className="px-4 py-4 w-24 text-right">Total</th>
-                    <th className="px-4 py-4 w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {sale.saleItems?.map((item, idx) => (
-                    <tr key={idx} className="group">
-                      <td className="px-2 py-4">
-                        <select 
-                          className="w-full bg-transparent border-none text-xs font-bold outline-none"
-                          value={item.itemType} onChange={e => updateItem(idx, { itemType: Number(e.target.value), eggInventoryId: null, flockId: null, inventoryItemId: null })}
-                        >
-                          <option value={1}>Eggs</option><option value={2}>Birds</option><option value={3}>Inventory</option>
-                        </select>
-                      </td>
-                      <td className="px-2 py-4">
-                        <select 
-                          className="w-full bg-transparent border-none text-xs font-bold outline-none text-orange-600"
-                          value={item.eggInventoryId || item.flockId || item.inventoryItemId || ''}
-                          onChange={e => {
-                            const val = Number(e.target.value);
-                            if(item.itemType === 1) updateItem(idx, { eggInventoryId: val });
-                            else if(item.itemType === 2) updateItem(idx, { flockId: val });
-                            else updateItem(idx, { inventoryItemId: val });
-                          }} required
-                        >
-                          <option value="">Select Item</option>
-                          {item.itemType === 1 && eggStocks.map(x => <option key={x.id} value={x.id}>{x.batchName || `Batch ${x.id}`}</option>)}
-                          {item.itemType === 2 && flocks.map(x => <option key={x.id} value={x.id}>{x.breed} ({x.batchNumber})</option>)}
-                          {item.itemType === 3 && inventoryItems.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-2 py-4">
-                        <input type="number" className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold outline-none" value={item.quantity} onChange={e => updateItem(idx, { quantity: Number(e.target.value) })} />
-                      </td>
-                      <td className="px-2 py-4">
-                        <input type="number" className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold outline-none" value={item.pricePerUnit} onChange={e => updateItem(idx, { pricePerUnit: Number(e.target.value) })} />
-                      </td>
-                      <td className="px-2 py-4 text-right font-black text-xs text-gray-900">₹{(item.quantity * item.pricePerUnit).toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center">
-                        <button type="button" onClick={() => { const items = [...(sale.saleItems || [])]; items.splice(idx, 1); setSale({...sale, saleItems: items}); }} className="text-red-300 hover:text-red-500"><Trash2 size={14}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="text-[10px] uppercase text-slate-400 border-b bg-slate-50/50">
+                  <th className="p-3 text-left">Category</th>
+                  <th className="p-3 text-left">Product</th>
+                  <th className="p-3 text-center w-52">Quantity</th>
+                  <th className="p-3 text-center w-32">Rate</th>
+                  <th className="p-3 text-right w-32">Total</th>
+                  <th className="p-3 text-center w-10"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sale.SaleItems?.map((item, idx) => {
+                    const currentEgg = eggStocks.find(e => e.Id === item.EggInventoryId);
+                    return (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="p-3">
+                            <select className="text-sm font-bold bg-transparent outline-none" value={item.ItemType} onChange={e => updateItem(idx, {ItemType: Number(e.target.value), EggInventoryId: null, FlockId: null, InventoryItemId: null, uiQuantity: 0})}>
+                                <option value={ItemType.Egg}>Eggs</option>
+                                <option value={ItemType.Bird}>Birds</option>
+                                <option value={ItemType.Inventory}>Other Items</option>
+                            </select>
+                            </td>
+                            <td className="p-3">
+                            <select className="w-full text-sm font-bold text-orange-700 bg-transparent outline-none" value={item.EggInventoryId || item.FlockId || item.InventoryItemId || ''} onChange={e => {
+                                const val = Number(e.target.value);
+                                if(item.ItemType === ItemType.Egg) updateItem(idx, {EggInventoryId: val});
+                                else if(item.ItemType === ItemType.Bird) updateItem(idx, {FlockId: val});
+                                else updateItem(idx, {InventoryItemId: val});
+                            }}>
+                                <option value="">Choose Item</option>
+                                {item.ItemType === ItemType.Egg && eggStocks.map(e => <option key={e.Id} value={e.Id}>{e.EggType}</option>)}
+                                {item.ItemType === ItemType.Bird && flocks.map(f => <option key={f.Id} value={f.Id}>{f.Breed}</option>)}
+                                {item.ItemType === ItemType.Inventory && inventoryItems.map(i => <option key={i.Id} value={i.Id}>{i.Name}</option>)}
+                            </select>
+                            {item.ItemType === ItemType.Egg && currentEgg && (
+                                <div className="text-[10px] font-bold text-blue-600 mt-1">Available: {currentEgg.CurrentStock} Eggs</div>
+                            )}
+                            </td>
+                            <td className="p-3">
+                            <div className="flex flex-col items-center">
+                                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-full">
+                                    <input type="number" className="w-full bg-white border-none rounded p-1.5 text-sm font-black text-center outline-none focus:ring-1 ring-orange-500" value={item.uiQuantity || ''} placeholder="0" onChange={e => updateItem(idx, { uiQuantity: Number(e.target.value) })} />
+                                    {item.ItemType === ItemType.Egg && (
+                                        <button type="button" onClick={() => updateItem(idx, { IsTrayInput: !item.IsTrayInput })} className={`text-[9px] font-black px-2 py-2 rounded transition-all shadow-sm ${item.IsTrayInput ? 'bg-orange-600 text-white' : 'bg-white text-slate-500'}`}>{item.IsTrayInput ? 'TRAYS' : 'EGGS'}</button>
+                                    )}
+                                </div>
+                                {item.ItemType === ItemType.Egg && item.uiQuantity > 0 && (
+                                    <span className="text-[9px] font-bold text-slate-400 mt-1">
+                                        {item.IsTrayInput ? `(${item.Quantity} Eggs)` : `(${(item.uiQuantity / 30).toFixed(2)} Trays)`}
+                                    </span>
+                                )}
+                            </div>
+                            </td>
+                            <td className="p-3"><input type="number" className="w-full bg-transparent text-sm font-black text-center outline-none border-b border-transparent focus:border-slate-300" value={item.PricePerUnit || ''} placeholder="0.00" onChange={e => updateItem(idx, {PricePerUnit: Number(e.target.value)})} /></td>
+                            <td className="p-3 text-right text-sm font-black text-slate-700">₹{item.TotalPrice.toLocaleString()}</td>
+                            <td className="p-3 text-center"><button type="button" onClick={() => removeItem(idx)} className="text-slate-300 hover:text-red-500"><Trash2 size={14}/></button></td>
+                        </tr>
+                    );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Sidebar Summary Card */}
-        <div className="space-y-6">
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 space-y-6 sticky top-6">
-            <h3 className="font-black text-gray-800 text-sm uppercase tracking-widest flex items-center gap-2"><Calculator size={18} className="text-orange-500" /> Payment Summary</h3>
-            <div className="space-y-4 border-b border-gray-50 pb-6">
-              <div className="flex justify-between text-sm font-bold text-gray-500"><span>Subtotal</span><span className="text-gray-900">₹{subTotal.toLocaleString()}</span></div>
-              <div className="flex justify-between items-center text-sm font-bold text-gray-500">
-                <span>Discount</span>
-                <input type="number" className="w-20 bg-gray-50 border-none rounded-xl p-2 text-right text-xs font-black outline-none" value={sale.discount} onChange={e => setSale({ ...sale, discount: Number(e.target.value) })} />
-              </div>
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-lg font-black text-gray-900">Grand Total</span>
-                <span className="text-2xl font-black text-orange-600">₹{grandTotal.toLocaleString()}</span>
-              </div>
+        <div className="col-span-12 lg:col-span-4">
+          <div className="bg-slate-900 text-white p-6 rounded-xl shadow-xl sticky top-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-6 text-slate-400 flex items-center gap-2"><Calculator size={14}/> Bill Summary</h3>
+            <div className="space-y-4 mb-6 text-sm">
+              <div className="flex justify-between font-bold"><span>Sub-Total</span><span>₹{subTotal.toLocaleString()}</span></div>
+              <div className="flex justify-between items-center font-bold"><span className="text-orange-400">Discount (₹)</span><input type="number" className="w-20 bg-slate-800 border-none rounded p-1 text-right text-orange-400 outline-none" value={sale.Discount} onChange={e => setSale({...sale, Discount: Number(e.target.value)})} /></div>
+              <div className="pt-4 border-t border-slate-800 flex justify-between items-end"><span className="text-xs font-bold opacity-50 uppercase tracking-tighter">Grand Total</span><span className="text-3xl font-black text-orange-500">₹{grandTotal.toLocaleString()}</span></div>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Received Amount</label>
-                <div className="relative">
-                  <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600" size={16} />
-                  <input 
-                    type="number" className="w-full bg-green-50 border-none rounded-2xl p-4 pl-10 text-sm font-black text-green-700 focus:ring-2 focus:ring-green-500 outline-none"
-                    value={sale.receivedAmount} onChange={e => setSale({ ...sale, receivedAmount: Number(e.target.value) })}
-                  />
+            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 space-y-4 mb-6">
+              <div className="flex justify-between items-center"><label className="text-[10px] font-bold uppercase text-slate-400">Cash Received</label><input type="number" className="bg-transparent text-right text-xl font-black text-green-400 outline-none w-28" value={sale.ReceivedAmount} onChange={e => setSale({...sale, ReceivedAmount: Number(e.target.value)})} /></div>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-700"><span className="text-[10px] font-bold uppercase text-red-400">Balance Amount</span><span className="text-lg font-black text-red-400">₹{balanceAmount.toLocaleString()}</span></div>
+            </div>
+
+            <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map(m => (
+                        <button key={m} type="button" onClick={() => setSale({...sale, PaymentMode: m})} className={`text-[10px] font-bold py-2 rounded border transition-all ${sale.PaymentMode === m ? 'bg-white text-black border-white' : 'border-slate-700 text-slate-400'}`}>{PaymentMode[m]}</button>
+                    ))}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment Mode</label>
-                <select className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm font-bold outline-none" value={sale.paymentMode} onChange={e => setSale({ ...sale, paymentMode: Number(e.target.value) })}>
-                  <option value={1}>Cash</option><option value={2}>Online</option><option value={3}>Bank Transfer</option>
-                </select>
-              </div>
+                <button type="submit" disabled={loading} className="w-full bg-orange-600 hover:bg-orange-500 text-white py-4 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg">
+                    {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                    {isEdit ? 'UPDATE & PRINT BILL' : 'SAVE & GENERATE BILL'}
+                </button>
             </div>
-
-            <button 
-              type="submit" disabled={loading}
-              className="w-full bg-gray-900 hover:bg-black text-white py-5 rounded-[24px] font-black text-sm transition-all active:scale-95 shadow-xl shadow-gray-200 flex items-center justify-center gap-3"
-            >
-              {loading ? 'Processing...' : <><Save size={20} /> {isEdit ? 'Update Invoice' : 'Confirm Sale'}</>}
-            </button>
           </div>
         </div>
       </form>

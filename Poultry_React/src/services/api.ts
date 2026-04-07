@@ -3,8 +3,8 @@ import axios, { AxiosError } from 'axios';
 /**
  * Poultry 360 ERP - API Configuration
  * ✅ JWT Token Injection
- * ✅ Full Debug Logs
- * ❌ NO Auto Redirect on 401 (Important Fix)
+ * ✅ 401 → Auto Logout & Redirect to Login
+ * ✅ No alert() popups (console logs only)
  */
 
 const api = axios.create({
@@ -23,17 +23,11 @@ api.interceptors.request.use(
     try {
       const token = localStorage.getItem('token');
 
-      // 🔐 Attach token
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
 
-      // 🔍 Debug Logs
-      console.log('🚀 API REQUEST');
-      console.log('➡️ URL:', config.baseURL + config.url);
-      console.log('➡️ Method:', config.method?.toUpperCase());
-      console.log('➡️ Token:', token);
-      console.log('➡️ Data:', config.data || null);
+      console.log('🚀 API REQUEST:', config.method?.toUpperCase(), config.baseURL + config.url);
 
       return config;
     } catch (err) {
@@ -52,69 +46,48 @@ api.interceptors.request.use(
 ========================= */
 api.interceptors.response.use(
   (response) => {
-    try {
-      console.log('✅ API RESPONSE');
-      console.log('⬅️ URL:', response.config.url);
-      console.log('⬅️ Status:', response.status);
-      console.log('⬅️ Data:', response.data);
-
-      return response;
-    } catch (err) {
-      console.error('❌ RESPONSE PARSE ERROR:', err);
-      return Promise.reject(err);
-    }
+    console.log('✅ API RESPONSE:', response.status, response.config.url);
+    return response;
   },
   (error: AxiosError) => {
-    console.error('🔥 API ERROR START 🔥');
-
-    // ❌ Network Error
+    // ❌ Network Error - Server बंद आहे
     if (!error.response) {
-      console.error('❌ NETWORK ERROR');
-      console.error('Message:', error.message);
-      alert('Server not reachable');
-      console.error('🔥 API ERROR END 🔥');
+      console.error('❌ NETWORK ERROR - Server reachable नाही:', error.message);
+      // ✅ alert() काढला - crash होत होता
       return Promise.reject(error);
     }
 
     const { status, data, config } = error.response;
-
-    console.error('➡️ URL:', config?.url);
-    console.error('➡️ Status:', status);
-    console.error('➡️ Response:', data);
-
-    /* =========================
-       🎯 STATUS HANDLING
-    ========================= */
+    console.error(`🔥 API ERROR: ${status}`, config?.url, data);
 
     switch (status) {
       case 400:
-        alert('Bad Request (400)');
+        console.error('❌ Bad Request (400)');
         break;
 
       case 401:
-        // 🔥 MAIN FIX: NO REDIRECT
-        console.error('🚨 401 Unauthorized - NOT redirecting');
-        console.error('👉 Check token / backend auth logic');
+        // ✅ Token expired/invalid → Logout करून Login वर पाठवा
+        console.error('🚨 401 Unauthorized - Token invalid, logging out');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
         break;
 
       case 403:
-        alert('Forbidden (403)');
+        console.error('❌ Forbidden (403)');
         break;
 
       case 404:
-        alert('API Not Found (404)');
+        console.error('❌ API Not Found (404):', config?.url);
         break;
 
       case 500:
-        alert('Server Error (500)');
+        console.error('❌ Server Error (500)');
         break;
 
       default:
-        console.error(`Unexpected Error: ${status}`);
+        console.error(`❌ Unexpected Error: ${status}`);
         break;
     }
-
-    console.error('🔥 API ERROR END 🔥');
 
     return Promise.reject(error);
   }

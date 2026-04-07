@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using PoultryERP.Application.Services;
 using PoultryERP.Domain.Interfaces;
 using PoultryERP.Persistence.Context;
 using PoultryERP.Persistence.Repositories;
@@ -74,9 +73,6 @@ builder.Services.AddAuthentication(options =>
 // 5. Dependency Injection (DI) - The Dynamic Way
 // आता स्वतंत्र रिपॉझिटरीज रजिस्टर करण्याची गरज नाही, फक्त UnitOfWork पुरेसा आहे.
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-// Services
-builder.Services.AddScoped<PoultryService>();
 
 // 6. CORS Policy
 builder.Services.AddCors(options =>

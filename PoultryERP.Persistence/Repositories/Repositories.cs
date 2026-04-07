@@ -47,23 +47,38 @@ namespace PoultryERP.Persistence.Repositories
             return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
         }
 
-        public async Task AddAsync(T entity) => await dbSet.AddAsync(entity);
-        public void Update(T entity) => dbSet.Update(entity);
-        public void Delete(T entity) => dbSet.Remove(entity);
-        public async Task<bool> ExistsAsync(int id) => await dbSet.AnyAsync(e => EF.Property<int>(e, "Id") == id);
+        public virtual async Task AddAsync(T entity)
+        {
+            await dbSet.AddAsync(entity);
+        }
+
+        public virtual void Update(T entity)
+        {
+            dbSet.Update(entity);
+        }
+
+        public virtual void Delete(T entity)
+        {
+            dbSet.Remove(entity);
+        }
+
+        public virtual async Task<bool> ExistsAsync(int id)
+        {
+            return await dbSet.AnyAsync(e => EF.Property<int>(e, "Id") == id);
+        }
     }
 
-    // 2. Specific Repository Implementations
-    public class SaleRepository : GenericRepository<Sale>, ISaleRepository
+    // 2. Specific Repositories
+    public class SalesRepository : GenericRepository<Sale>, ISaleRepository
     {
-        public SaleRepository(PoultryDbContext context) : base(context) { }
+        public SalesRepository(PoultryDbContext context) : base(context) { }
+
         public async Task<Sale?> GetSaleWithItemsAsync(int id)
         {
             return await _context.Sales
                 .Include(s => s.Customer)
-                .Include(s => s.SaleItems).ThenInclude(si => si.EggInventory)
-                .Include(s => s.SaleItems).ThenInclude(si => si.Flock)
-                .Include(s => s.SaleItems).ThenInclude(si => si.InventoryItem)
+                .Include(s => s.SaleItems)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
     }
@@ -74,38 +89,24 @@ namespace PoultryERP.Persistence.Repositories
 
         public async Task UpdateAsync(Flock flock)
         {
-            var objFromDb = await _context.Flocks.FirstOrDefaultAsync(s => s.Id == flock.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.Breed = flock.Breed;
-                objFromDb.CurrentCount = flock.CurrentCount;
-                objFromDb.IsActive = flock.IsActive;
-                _context.Flocks.Update(objFromDb);
-            }
+            _context.Flocks.Update(flock);
+            await Task.CompletedTask;
         }
 
-        // FIX: Missing DeleteAsync implementation
         public async Task DeleteAsync(int id)
         {
-            var entity = await _context.Flocks.FindAsync(id);
-            if (entity != null)
-            {
-                _context.Flocks.Remove(entity);
-            }
+            var flock = await _context.Flocks.FindAsync(id);
+            if (flock != null) _context.Flocks.Remove(flock);
         }
-    }
-
-    public class FinancialTransactionRepository : GenericRepository<FinancialTransaction>, IFinancialTransactionRepository
-    {
-        public FinancialTransactionRepository(PoultryDbContext context) : base(context) { }
     }
 
     public class InventoryRepository : GenericRepository<InventoryItem>, IInventoryRepository
     {
         public InventoryRepository(PoultryDbContext context) : base(context) { }
-        public async Task UpdateStockAsync(int itemId, decimal quantity, bool isAddition)
+
+        public async Task UpdateStockAsync(int id, decimal quantity, bool isAddition)
         {
-            var item = await _context.Inventory.FindAsync(itemId);
+            var item = await _context.Inventory.FindAsync(id);
             if (item != null)
             {
                 if (isAddition) item.Quantity += quantity;
@@ -119,40 +120,49 @@ namespace PoultryERP.Persistence.Repositories
     public class UnitOfWork : IUnitOfWork
     {
         private readonly PoultryDbContext _context;
+
         public UnitOfWork(PoultryDbContext context)
         {
             _context = context;
+            Sales = new SalesRepository(_context);
             Flocks = new FlockRepository(_context);
             Inventory = new InventoryRepository(_context);
-            Sales = new SaleRepository(_context);
-            FinancialTransactions = new FinancialTransactionRepository(_context);
         }
+
+        public ISaleRepository Sales { get; private set; }
+        public IFlockRepository Flocks { get; private set; }
+        public IInventoryRepository Inventory { get; private set; }
 
         public IGenericRepository<T> Repository<T>() where T : class => new GenericRepository<T>(_context);
 
-        public IFlockRepository Flocks { get; private set; }
-        public IInventoryRepository Inventory { get; private set; }
-        public ISaleRepository Sales { get; private set; }
-        public IFinancialTransactionRepository FinancialTransactions { get; private set; }
-
-        // FIX: Missing FoodFormations and others
+        // Map correctly to specialized interfaces if they exist, otherwise cast Generic
+        public IVaccinationRepository Vaccinations => (IVaccinationRepository)new GenericRepository<Vaccination>(_context);
         public IFoodFormationRepository FoodFormations => (IFoodFormationRepository)new GenericRepository<FoodFormation>(_context);
         public IStaffRepository Staffs => (IStaffRepository)new GenericRepository<Staff>(_context);
-        public IVaccinationRepository Vaccinations => (IVaccinationRepository)new GenericRepository<Vaccination>(_context);
+        public IFinancialTransactionRepository FinancialTransactions => (IFinancialTransactionRepository)new GenericRepository<FinancialTransaction>(_context);
 
-        // General Repositories
         public IGenericRepository<Customer> Customers => Repository<Customer>();
         public IGenericRepository<TransactionCategory> TransactionCategories => Repository<TransactionCategory>();
         public IGenericRepository<EggInventory> EggInventories => Repository<EggInventory>();
         public IGenericRepository<Warehouse> Warehouses => Repository<Warehouse>();
         public IGenericRepository<Supplier> Suppliers => Repository<Supplier>();
         public IGenericRepository<DailyLog> DailyLogs => Repository<DailyLog>();
-        public IGenericRepository<Expense> Expenses => Repository<Expense>();
+        
 
         public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
         public async Task BeginTransactionAsync() => await _context.Database.BeginTransactionAsync();
-        public async Task CommitTransactionAsync() => await _context.Database.CommitTransactionAsync();
-        public async Task RollbackTransactionAsync() => await _context.Database.RollbackTransactionAsync();
+
+        public async Task CommitTransactionAsync()
+        {
+            if (_context.Database.CurrentTransaction != null)
+                await _context.Database.CommitTransactionAsync();
+        }
+
+        public async Task RollbackTransactionAsync()
+        {
+            if (_context.Database.CurrentTransaction != null)
+                await _context.Database.RollbackTransactionAsync();
+        }
 
         public void Dispose() => _context.Dispose();
     }

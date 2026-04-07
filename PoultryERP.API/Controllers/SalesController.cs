@@ -45,32 +45,25 @@ namespace PoultryERP.WebAPI.Controllers
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // १. Sale ची मूळ माहिती तयार करा
                 sale.Date = sale.Date == default ? DateTime.Now : sale.Date;
-                var itemsToProcess = sale.SaleItems.ToList(); // Items बॅकअप घ्या
-                sale.SaleItems = new List<SaleItem>(); // तात्पुरते रिकामे करा जेणेकरून Sale आधी सेव्ह होईल
+                var itemsToProcess = sale.SaleItems.ToList();
+                sale.SaleItems = new List<SaleItem>();
 
                 await _unitOfWork.Repository<Sale>().AddAsync(sale);
-                await _unitOfWork.CompleteAsync(); // इथे Sale ID जनरेट होतो
+                await _unitOfWork.CompleteAsync();
 
                 decimal calculatedSubTotal = 0;
-
                 foreach (var item in itemsToProcess)
                 {
-                    item.Id = 0; // <--- ही ओळ सर्वात महत्त्वाची आहे. यामुळे IDENTITY एरर येणार नाही.
+                    item.Id = 0;
                     item.SaleId = sale.Id;
-
-                    // २. स्टॉक अपडेट करा
                     await HandleStockAdjustment(item, isAddition: false);
-
                     calculatedSubTotal += (item.Quantity * item.PricePerUnit);
                     await _unitOfWork.Repository<SaleItem>().AddAsync(item);
                 }
 
                 sale.SubTotal = calculatedSubTotal;
                 sale.GrandTotal = sale.SubTotal - sale.Discount;
-
-                // ३. कॅल्क्युलेशन अपडेट करा
                 _unitOfWork.Repository<Sale>().Update(sale);
 
                 await _unitOfWork.CompleteAsync();
@@ -81,91 +74,68 @@ namespace PoultryERP.WebAPI.Controllers
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                // Inner exception मधील नेमकी चूक दाखवण्यासाठी
-                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return BadRequest(new { Message = message });
+                return BadRequest(new { Message = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSale(int id, Sale sale)
         {
-            if (id != sale.Id)
-            {
-                return BadRequest(new { Message = "ID mismatch: The ID in the URL does not match the ID in the request body." });
-            }
+            if (id != sale.Id) return BadRequest(new { Message = "ID mismatch." });
 
-            // १. अस्तित्वात असलेला सेल आणि त्याचे आयटम्स मिळवा
             var existingSale = await _unitOfWork.Sales.GetSaleWithItemsAsync(id);
-            if (existingSale == null)
-            {
-                return NotFound(new { Message = $"Sale record with ID {id} was not found in the system." });
-            }
+            if (existingSale == null) return NotFound(new { Message = "Sale record not found." });
 
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // २. जुन्या आयटम्सचा स्टॉक रिव्हर्ट करा (परत वाढवा)
                 foreach (var oldItem in existingSale.SaleItems)
                 {
                     await HandleStockAdjustment(oldItem, isAddition: true);
                 }
 
-                // ३. मुख्य सेलची माहिती अपडेट करा
-                existingSale.CustomerId = sale.CustomerId;
-                existingSale.Date = sale.Date;
-                existingSale.Discount = sale.Discount;
-                existingSale.ReceivedAmount = sale.ReceivedAmount;
-                existingSale.Notes = sale.Notes;
-                existingSale.PaymentMode = sale.PaymentMode;
-                existingSale.Status = sale.Status;
+                var saleToUpdate = await _unitOfWork.Repository<Sale>().GetByIdAsync(id);
+                if (saleToUpdate == null) throw new Exception("Sale record load error.");
 
-                // ४. जुने आयटम्स काढून नवीन ॲड करा (Delete and Re-add strategy)
-                var currentItems = (await _unitOfWork.Repository<SaleItem>().GetAllAsync())
-                                    .Where(si => si.SaleId == id).ToList();
+                saleToUpdate.CustomerId = sale.CustomerId;
+                saleToUpdate.Date = sale.Date;
+                saleToUpdate.Discount = sale.Discount;
+                saleToUpdate.ReceivedAmount = sale.ReceivedAmount;
+                saleToUpdate.Notes = sale.Notes;
+                saleToUpdate.PaymentMode = sale.PaymentMode;
+                saleToUpdate.Status = sale.Status;
 
-                foreach (var item in currentItems)
-                {
-                    _unitOfWork.Repository<SaleItem>().Delete(item);
-                }
+                var dbItems = (await _unitOfWork.Repository<SaleItem>().GetAllAsync())
+                                .Where(si => si.SaleId == id).ToList();
+                foreach (var item in dbItems) _unitOfWork.Repository<SaleItem>().Delete(item);
+                await _unitOfWork.CompleteAsync();
 
                 decimal calculatedSubTotal = 0;
                 foreach (var newItem in sale.SaleItems)
                 {
-                    newItem.Id = 0; // IDENTITY_INSERT एरर टाळण्यासाठी
+                    newItem.Id = 0;
                     newItem.SaleId = id;
-
-                    // ५. नवीन स्टॉक ॲडजस्टमेंट (घट करणे)
                     await HandleStockAdjustment(newItem, isAddition: false);
-
                     calculatedSubTotal += (newItem.Quantity * newItem.PricePerUnit);
                     await _unitOfWork.Repository<SaleItem>().AddAsync(newItem);
                 }
 
-                existingSale.SubTotal = calculatedSubTotal;
-                existingSale.GrandTotal = existingSale.SubTotal - existingSale.Discount;
+                saleToUpdate.SubTotal = calculatedSubTotal;
+                saleToUpdate.GrandTotal = saleToUpdate.SubTotal - saleToUpdate.Discount;
+                _unitOfWork.Repository<Sale>().Update(saleToUpdate);
 
-                _unitOfWork.Repository<Sale>().Update(existingSale);
-
-                // ६. सर्व बदल सेव्ह करा आणि ट्रान्झॅक्शन कमिट करा
                 await _unitOfWork.CompleteAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                return Ok(new { Message = "Sale record and stock inventory updated successfully." });
+                return Ok(new { Message = "Sale updated successfully." });
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-
-                // तांत्रिक एररसाठी स्पष्ट मेसेज
-                var errorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return BadRequest(new
-                {
-                    Message = "An error occurred while updating the sale record.",
-                    Details = errorMessage
-                });
+                return BadRequest(new { Message = ex.InnerException?.Message ?? ex.Message });
             }
         }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSale(int id)
         {
@@ -175,16 +145,12 @@ namespace PoultryERP.WebAPI.Controllers
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                foreach (var item in sale.SaleItems)
-                {
-                    await HandleStockAdjustment(item, isAddition: true);
-                }
-
-                _unitOfWork.Repository<Sale>().Delete(sale);
+                foreach (var item in sale.SaleItems) await HandleStockAdjustment(item, isAddition: true);
+                var dbSale = await _unitOfWork.Repository<Sale>().GetByIdAsync(id);
+                if (dbSale != null) _unitOfWork.Repository<Sale>().Delete(dbSale);
 
                 await _unitOfWork.CompleteAsync();
                 await _unitOfWork.CommitTransactionAsync();
-
                 return NoContent();
             }
             catch (Exception ex)
@@ -202,7 +168,13 @@ namespace PoultryERP.WebAPI.Controllers
                 if (egg != null)
                 {
                     int qty = (int)item.Quantity;
-                    egg.CurrentStock = isAddition ? egg.CurrentStock + qty : egg.CurrentStock - qty;
+                    if (isAddition) egg.CurrentStock += qty;
+                    else
+                    {
+                        if (egg.CurrentStock < qty) throw new Exception($"Egg: अपुरा स्टॉक ({egg.CurrentStock})");
+                        egg.CurrentStock -= qty;
+                    }
+                    egg.LastUpdated = DateTime.Now;
                     _unitOfWork.EggInventories.Update(egg);
                 }
             }
@@ -212,7 +184,12 @@ namespace PoultryERP.WebAPI.Controllers
                 if (flock != null)
                 {
                     int qty = (int)item.Quantity;
-                    flock.CurrentCount = isAddition ? flock.CurrentCount + qty : flock.CurrentCount - qty;
+                    if (isAddition) flock.CurrentCount += qty;
+                    else
+                    {
+                        if (flock.CurrentCount < qty) throw new Exception($"Flock: अपुरा स्टॉक ({flock.CurrentCount})");
+                        flock.CurrentCount -= qty;
+                    }
                     _unitOfWork.Flocks.Update(flock);
                 }
             }
@@ -221,7 +198,13 @@ namespace PoultryERP.WebAPI.Controllers
                 var inv = await _unitOfWork.Inventory.GetByIdAsync(item.InventoryItemId.Value);
                 if (inv != null)
                 {
-                    inv.Quantity = isAddition ? inv.Quantity + item.Quantity : inv.Quantity - item.Quantity;
+                    if (isAddition) inv.Quantity += item.Quantity;
+                    else
+                    {
+                        if (inv.Quantity < item.Quantity) throw new Exception("Inventory: अपुरा स्टॉक.");
+                        inv.Quantity -= item.Quantity;
+                    }
+                    inv.LastUpdated = DateTime.Now;
                     _unitOfWork.Inventory.Update(inv);
                 }
             }

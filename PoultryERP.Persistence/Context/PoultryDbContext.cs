@@ -16,13 +16,11 @@ namespace PoultryERP.Persistence.Context
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Sale> Sales { get; set; }
         public DbSet<SaleItem> SaleItems { get; set; }
-        public DbSet<Expense> Expenses { get; set; }
         public DbSet<Vaccination> Vaccinations { get; set; }
         public DbSet<Purchase> Purchases { get; set; }
         public DbSet<PurchaseItem> PurchaseItems { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<Warehouse> Warehouse { get; set; }
-        public DbSet<EggProduction> Production { get; set; }
         public DbSet<FoodFormation> FoodFormations { get; set; }
         public DbSet<FoodFormationItem> FoodFormationItems { get; set; }
 

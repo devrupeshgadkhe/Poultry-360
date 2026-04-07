@@ -61,7 +61,6 @@ namespace PoultryERP.Domain.Interfaces
         IGenericRepository<Supplier> Suppliers { get; }
         IGenericRepository<Customer> Customers { get; }
         IGenericRepository<DailyLog> DailyLogs { get; }
-        IGenericRepository<Expense> Expenses { get; }
         IVaccinationRepository Vaccinations { get; }
         IFoodFormationRepository FoodFormations { get; }
         IStaffRepository Staffs { get; }
